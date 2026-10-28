@@ -1,0 +1,106 @@
+---
+import { Font } from 'astro:assets';
+import { SITE, THEME_COLOURS } from '../consts';
+import ThemeScript from './ThemeScript.astro';
+
+export interface Props {
+	/** Page title. Leave out on the home page to use the site title alone. */
+	title?: string;
+	description?: string;
+	/** Absolute or root-relative URL of the share image. Defaults to /og-default.png. */
+	image?: { src: string; alt: string; width: number; height: number };
+	type?: 'website' | 'article';
+	article?: { published: Date; modified?: Date; tags?: string[] };
+	/** JSON-LD object, rendered as application/ld+json. */
+	jsonLd?: Record<string, unknown>;
+	noindex?: boolean;
+}
+
+const {
+	title,
+	description = SITE.description,
+	image = {
+		src: '/og-default.png',
+		alt: SITE.tagline ? `${SITE.title}: ${SITE.tagline}` : SITE.title,
+		width: 1200,
+		height: 630,
+	},
+	type = 'website',
+	article,
+	jsonLd,
+	noindex = false,
+} = Astro.props;
+
+const fullTitle = title ? `${title} · ${SITE.title}` : SITE.title;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const imageUrl = new URL(image.src, Astro.site);
+
+// Prerender same-site pages as soon as the reader shows intent (hover or
+// pointer down), so navigation feels instant. Feeds, files and the CMS are
+// left alone.
+const speculationRules = {
+	prerender: [
+		{
+			where: {
+				and: [
+					{ href_matches: '/*' },
+					{ not: { href_matches: ['/keystatic', '/keystatic/*', '/*.xml', '/*.txt', '/*.png', '/*.jpg'] } },
+					{ not: { selector_matches: '[rel~="nofollow"], [download], [target="_blank"]' } },
+				],
+			},
+			eagerness: 'moderate',
+		},
+	],
+};
+
+const ldJson = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : undefined;
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+{noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
+{SITE.author && <meta name="author" content={SITE.author} />}
+
+<meta name="color-scheme" content="light dark" />
+<meta name="theme-color" content={THEME_COLOURS.light} media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content={THEME_COLOURS.dark} media="(prefers-color-scheme: dark)" />
+<ThemeScript />
+
+<Font cssVariable="--font-serif" preload={[{ style: 'normal' }]} />
+<Font cssVariable="--font-sans" preload />
+
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="alternate" type="application/rss+xml" title={SITE.title} href={new URL('rss.xml', Astro.site)} />
+<link rel="sitemap" href="/sitemap-index.xml" />
+
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content={SITE.title} />
+<meta property="og:locale" content={SITE.locale} />
+<meta property="og:title" content={title ?? SITE.title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={imageUrl} />
+<meta property="og:image:width" content={String(image.width)} />
+<meta property="og:image:height" content={String(image.height)} />
+<meta property="og:image:alt" content={image.alt} />
+{
+	article && (
+		<>
+			<meta property="article:published_time" content={article.published.toISOString()} />
+			{article.modified && <meta property="article:modified_time" content={article.modified.toISOString()} />}
+			{SITE.author && <meta property="article:author" content={SITE.author} />}
+			{article.tags?.map((tag) => <meta property="article:tag" content={tag} />)}
+		</>
+	)
+}
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title ?? SITE.title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageUrl} />
+<meta name="twitter:image:alt" content={image.alt} />
+
+<script is:inline type="speculationrules" set:html={JSON.stringify(speculationRules)} />
+{ldJson && <script is:inline type="application/ld+json" set:html={ldJson} />}

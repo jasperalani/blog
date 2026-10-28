@@ -1,0 +1,510 @@
+/* ==========================================================================
+   Global styles
+   1. Tokens          4. Layout grid (.page-grid, .prose)
+   2. Base            5. Prose content
+   3. Utilities       6. Page transitions
+   Component styles live next to their components.
+   ========================================================================== */
+
+/* 1. Tokens ---------------------------------------------------------------- */
+
+:root {
+	/* Follow the system until the head script sets data-theme. */
+	color-scheme: light dark;
+
+	/* Colour: light-dark(light, dark). Both pairs meet WCAG AA for text. */
+	--bg: light-dark(#fbf9f4, #161512);
+	--surface: light-dark(#f3efe6, #201e1a);
+	--surface-strong: light-dark(#e9e3d6, #2b2823);
+	--text: light-dark(#1d1b18, #ece7dd);
+	--text-muted: light-dark(#5e5950, #a8a194);
+	--rule: light-dark(#e2dccf, #34312b);
+	--rule-strong: light-dark(#857f73, #7d776c);
+	--accent: light-dark(#b03a14, #f2906a);
+	--accent-strong: light-dark(#8a2c0e, #f8b293);
+	--accent-soft: light-dark(#f7e9e1, #2a201b);
+	--selection: light-dark(#f3d3c3, #5a3424);
+
+	/* Type. --font-serif and --font-sans come from <Font /> (astro.config.mjs). */
+	--font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, monospace;
+	--step--2: clamp(0.78rem, 0.76rem + 0.08vw, 0.8125rem);
+	--step--1: clamp(0.875rem, 0.85rem + 0.12vw, 0.9375rem);
+	--step-0: clamp(1.125rem, 1.08rem + 0.22vw, 1.25rem);
+	--step-1: clamp(1.25rem, 1.18rem + 0.36vw, 1.45rem);
+	--step-2: clamp(1.5rem, 1.36rem + 0.7vw, 1.875rem);
+	--step-3: clamp(1.8rem, 1.55rem + 1.25vw, 2.5rem);
+	--step-4: clamp(2.2rem, 1.75rem + 2.25vw, 3.5rem);
+
+	/* Space */
+	--space-3xs: 0.25rem;
+	--space-2xs: 0.5rem;
+	--space-xs: 0.75rem;
+	--space-s: 1rem;
+	--space-m: 1.5rem;
+	--space-l: 2rem;
+	--space-xl: clamp(2.5rem, 2rem + 2vw, 3.5rem);
+	--space-2xl: clamp(3.5rem, 2.75rem + 3vw, 5.5rem);
+	--space-3xl: clamp(4.5rem, 3.5rem + 4vw, 7.5rem);
+
+	/* Layout */
+	--gutter: clamp(1rem, 3vw, 2rem);
+	--measure: 42rem;
+	--wide: 60rem;
+	--radius-s: 0.25rem;
+	--radius: 0.5rem;
+	--radius-l: 0.875rem;
+	--ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+:root[data-theme='light'] {
+	color-scheme: light;
+}
+:root[data-theme='dark'] {
+	color-scheme: dark;
+}
+
+/* 2. Base ------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	-webkit-text-size-adjust: none;
+	text-size-adjust: none;
+	scroll-padding-block-start: var(--space-l);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	html:focus-within {
+		scroll-behavior: smooth;
+	}
+}
+
+body {
+	margin: 0;
+	min-block-size: 100dvh;
+	display: flex;
+	flex-direction: column;
+	background: var(--bg);
+	color: var(--text);
+	font-family: var(--font-serif);
+	font-size: var(--step-0);
+	line-height: 1.6;
+	font-optical-sizing: auto;
+	font-kerning: normal;
+	text-rendering: optimizeLegibility;
+	hanging-punctuation: first allow-end;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+main {
+	flex: 1;
+}
+
+h1,
+h2,
+h3,
+h4 {
+	font-weight: 600;
+	line-height: 1.15;
+	letter-spacing: -0.012em;
+	text-wrap: balance;
+}
+
+h1 {
+	font-size: var(--step-4);
+	font-weight: 560;
+	line-height: 1.06;
+	letter-spacing: -0.022em;
+}
+
+p,
+li,
+dd,
+figcaption,
+blockquote {
+	text-wrap: pretty;
+}
+
+/* Zero specificity, so spacing rules such as .prose's flow always win. */
+:where(h1, h2, h3, h4, p, ul, ol, dl, dd, figure, blockquote, pre, table) {
+	margin: 0;
+}
+
+img,
+svg,
+video,
+canvas {
+	display: block;
+	max-inline-size: 100%;
+}
+
+img {
+	block-size: auto;
+}
+
+button,
+input,
+select,
+textarea {
+	font: inherit;
+	color: inherit;
+}
+
+a {
+	color: inherit;
+	text-decoration-thickness: 0.075em;
+	text-underline-offset: 0.2em;
+	transition: color 0.15s, text-decoration-color 0.15s;
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 3px;
+	border-radius: var(--radius-s);
+}
+
+::selection {
+	background: var(--selection);
+	color: var(--text);
+}
+
+/* 3. Utilities ------------------------------------------------------------- */
+
+.visually-hidden:not(:focus, :active),
+.sr-only {
+	position: absolute;
+	inline-size: 1px;
+	block-size: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Small sans-serif labels: dates, reading time, tags. */
+.meta {
+	font-family: var(--font-sans);
+	font-size: var(--step--1);
+	line-height: 1.45;
+	color: var(--text-muted);
+	font-variant-numeric: lining-nums tabular-nums;
+}
+
+.eyebrow {
+	font-family: var(--font-sans);
+	font-size: var(--step--2);
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	word-spacing: 0.15em;
+	text-transform: uppercase;
+	color: var(--accent);
+}
+
+.tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2xs);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-family: var(--font-sans);
+	font-size: var(--step--2);
+	font-weight: 500;
+	letter-spacing: 0.01em;
+
+	& li {
+		padding: 0.15em 0.6em;
+		border: 1px solid var(--rule);
+		border-radius: 999px;
+		color: var(--text-muted);
+	}
+}
+
+/* 4. Layout grid ------------------------------------------------------------
+   Three nested columns, named so children can opt in:
+     content  readable measure (42rem)
+     wide     figures and interactive pieces (60rem)
+     full     edge to edge
+   On narrow screens every column collapses to the viewport minus --gutter
+   on each side, because the wide tracks shrink to zero first.
+   -------------------------------------------------------------------------- */
+
+.page-grid,
+.prose {
+	display: grid;
+	grid-template-columns:
+		[full-start] minmax(var(--gutter), 1fr)
+		[wide-start] minmax(0, calc((var(--wide) - var(--measure)) / 2))
+		[content-start] min(var(--measure), 100% - 2 * var(--gutter))
+		[content-end] minmax(0, calc((var(--wide) - var(--measure)) / 2))
+		[wide-end] minmax(var(--gutter), 1fr)
+		[full-end];
+	align-content: start;
+
+	& > * {
+		grid-column: content;
+		min-inline-size: 0;
+	}
+	& > .wide {
+		grid-column: wide;
+	}
+	& > .full {
+		grid-column: full;
+	}
+}
+
+/* 5. Prose ------------------------------------------------------------------
+   Element styles for rendered posts. Everything sits inside :where() so it
+   has zero specificity and any component's own styles win.
+   -------------------------------------------------------------------------- */
+
+:where(.prose) {
+	& > * + * {
+		margin-block-start: 1.3em;
+	}
+
+	& > :where(.wide, .full) {
+		margin-block: var(--space-xl);
+	}
+
+	& :is(h2, h3, h4) {
+		scroll-margin-block-start: var(--space-l);
+	}
+
+	& > h2 {
+		margin-block-start: 2.2em;
+		font-size: var(--step-2);
+	}
+
+	& > h3 {
+		margin-block-start: 1.9em;
+		font-size: var(--step-1);
+	}
+
+	& > h4 {
+		margin-block-start: 1.8em;
+		font-family: var(--font-sans);
+		font-size: var(--step-0);
+		letter-spacing: 0;
+	}
+
+	& > :is(h2, h3, h4) + * {
+		margin-block-start: 0.6em;
+	}
+
+	& a {
+		text-decoration-color: color-mix(in oklab, var(--accent) 70%, transparent);
+
+		&:hover {
+			color: var(--accent);
+			text-decoration-color: currentColor;
+		}
+	}
+
+	& strong {
+		font-weight: 650;
+	}
+
+	& :is(ul, ol) {
+		padding-inline-start: 1.4em;
+
+		& > li + li,
+		& > li > :is(ul, ol) {
+			margin-block-start: 0.4em;
+		}
+	}
+
+	& li::marker {
+		color: var(--text-muted);
+	}
+
+	& ol > li::marker {
+		font-family: var(--font-sans);
+		font-size: 0.9em;
+		font-variant-numeric: tabular-nums;
+	}
+
+	& li > p + p {
+		margin-block-start: 0.6em;
+	}
+
+	& blockquote {
+		padding-inline-start: 1.25em;
+		border-inline-start: 2px solid var(--accent);
+		font-style: italic;
+		color: var(--text-muted);
+
+		& > * + * {
+			margin-block-start: 0.8em;
+		}
+	}
+
+	& hr {
+		block-size: auto;
+		margin-block: var(--space-xl);
+		border: 0;
+		text-align: center;
+		color: var(--rule-strong);
+
+		&::before {
+			content: '\2022\2002\2002\2022\2002\2002\2022';
+			font-size: var(--step--1);
+		}
+	}
+
+	& :not(pre) > code {
+		padding: 0.12em 0.35em;
+		border-radius: var(--radius-s);
+		background: var(--surface);
+		font-family: var(--font-mono);
+		font-size: 0.85em;
+		overflow-wrap: anywhere;
+	}
+
+	& pre {
+		padding: var(--space-s) var(--space-m);
+		border: 1px solid var(--rule);
+		border-radius: var(--radius);
+		/* Shiki sets its own background inline; use ours so code sits in the page. */
+		background-color: var(--surface) !important;
+		font-family: var(--font-mono);
+		font-size: var(--step--1);
+		line-height: 1.6;
+		overflow-x: auto;
+		tab-size: 2;
+
+		& code {
+			font: inherit;
+		}
+	}
+
+	& img {
+		border-radius: var(--radius);
+	}
+
+	& figure > :is(img, picture, svg) {
+		inline-size: 100%;
+	}
+
+	& figcaption {
+		margin-block-start: var(--space-xs);
+		font-family: var(--font-sans);
+		font-size: var(--step--1);
+		line-height: 1.5;
+		color: var(--text-muted);
+	}
+
+	& table {
+		display: block;
+		max-inline-size: 100%;
+		overflow-x: auto;
+		border-collapse: collapse;
+		font-family: var(--font-sans);
+		font-size: var(--step--1);
+		font-variant-numeric: tabular-nums;
+	}
+
+	& :is(th, td) {
+		padding: 0.55em 0.9em;
+		border-block-end: 1px solid var(--rule);
+		text-align: start;
+		vertical-align: top;
+	}
+
+	& th {
+		border-block-end-color: var(--rule-strong);
+		font-weight: 600;
+	}
+
+	& :is(th, td):first-child {
+		padding-inline-start: 0;
+	}
+
+	& kbd {
+		padding: 0.1em 0.4em;
+		border: 1px solid var(--rule);
+		border-block-end-width: 2px;
+		border-radius: var(--radius-s);
+		font-family: var(--font-mono);
+		font-size: 0.8em;
+	}
+
+	& mark {
+		padding-inline: 0.15em;
+		background: var(--selection);
+		color: inherit;
+	}
+
+	& abbr[title] {
+		text-decoration-style: dotted;
+	}
+
+	& sup,
+	& sub {
+		line-height: 0;
+	}
+
+	& [data-footnote-ref] {
+		padding-inline: 0.1em;
+		font-family: var(--font-sans);
+		font-size: 0.8em;
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+	& > .footnotes {
+		margin-block-start: var(--space-xl);
+		padding-block-start: var(--space-m);
+		border-block-start: 1px solid var(--rule);
+		font-size: var(--step--1);
+		color: var(--text-muted);
+
+		& ol {
+			padding-inline-start: 1.2em;
+		}
+
+		& [data-footnote-backref] {
+			text-decoration: none;
+		}
+	}
+}
+
+/* 6. Page transitions -------------------------------------------------------
+   Cross-document view transitions: a quick fade with a hint of upward
+   movement. The header keeps its own name so it stays still. Skipped
+   entirely when the reader prefers reduced motion.
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+	@view-transition {
+		navigation: auto;
+	}
+
+	::view-transition-old(root) {
+		animation: 120ms ease-in both vt-out;
+	}
+
+	::view-transition-new(root) {
+		animation: 220ms var(--ease-out) 40ms both vt-in;
+	}
+}
+
+@keyframes vt-out {
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes vt-in {
+	from {
+		opacity: 0;
+		transform: translateY(0.5rem);
+	}
+}

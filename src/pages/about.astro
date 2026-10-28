@@ -1,0 +1,33 @@
+---
+// The About page is edited in the CMS (About page). Its body is MDX and its
+// title comes from the file's frontmatter.
+import About, { frontmatter } from '../content/about.mdx';
+import { mdxComponents } from '../components/mdx';
+import { SITE } from '../consts';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title: string = frontmatter?.title || 'About';
+const description = SITE.tagline ? `About ${SITE.title}: ${SITE.tagline}` : `About ${SITE.title}`;
+---
+
+<BaseLayout title={title} description={description}>
+	<article>
+		<header class="page-grid intro">
+			<h1>{title}</h1>
+		</header>
+		<div class="prose">
+			<About components={mdxComponents} />
+		</div>
+	</article>
+</BaseLayout>
+
+<style>
+	.intro {
+		padding-block: var(--space-2xl) var(--space-l);
+	}
+
+	.prose > :global(p:first-child) {
+		font-size: var(--step-1);
+		line-height: 1.5;
+	}
+</style>

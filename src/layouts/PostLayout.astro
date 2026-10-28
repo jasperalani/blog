@@ -1,0 +1,250 @@
+---
+import { getImage } from 'astro:assets';
+import FormattedDate from '../components/FormattedDate.astro';
+import { postUrl, readingTime, type Post } from '../components/posts';
+import { SITE } from '../consts';
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+	post: Post;
+	prev?: Post;
+	next?: Post;
+}
+
+const { post, prev, next } = Astro.props;
+const { title, description, pubDate, updatedDate, tags, cover, coverAlt, draft } = post.data;
+const time = readingTime(post.body);
+const url = new URL(postUrl(post), Astro.site);
+const showUpdated = updatedDate && updatedDate.valueOf() !== pubDate.valueOf();
+
+// A cover image becomes the share image, cropped to the 1.91:1 shape that
+// social sites expect. Without one, BaseHead falls back to /og-default.png.
+const ogImage = cover
+	? await getImage({ src: cover, width: 1200, height: 630, fit: 'cover', format: 'jpg', quality: 80 })
+	: undefined;
+const image = ogImage
+	? { src: ogImage.src, alt: coverAlt ?? title, width: 1200, height: 630 }
+	: undefined;
+
+const author = SITE.author ? { '@type': 'Person', name: SITE.author, url: new URL('/about/', Astro.site).href } : undefined;
+const jsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'BlogPosting',
+	headline: title,
+	description,
+	datePublished: pubDate.toISOString(),
+	dateModified: (updatedDate ?? pubDate).toISOString(),
+	url: url.href,
+	mainEntityOfPage: { '@type': 'WebPage', '@id': url.href },
+	image: new URL(image?.src ?? '/og-default.png', Astro.site).href,
+	inLanguage: SITE.lang,
+	keywords: tags.length ? tags.join(', ') : undefined,
+	author,
+	publisher: author,
+	isPartOf: { '@type': 'Blog', name: SITE.title, url: new URL('/', Astro.site).href },
+};
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	type="article"
+	image={image}
+	article={{ published: pubDate, modified: updatedDate, tags }}
+	jsonLd={jsonLd}
+>
+	<article class="post">
+		<header class="post-header page-grid">
+			<div class="heading">
+				{draft && <p class="draft">Draft: only visible while editing locally</p>}
+				{tags.length > 0 && <p class="eyebrow">{tags.join(' · ')}</p>}
+				<h1>{title}</h1>
+				<p class="dek">{description}</p>
+				<p class="meta byline">
+					<span class="byline-items">
+						{SITE.author && <span>By {SITE.author}</span>}
+						<FormattedDate date={pubDate} />
+						{
+							showUpdated && (
+								<span>
+									Updated <FormattedDate date={updatedDate} />
+								</span>
+							)
+						}
+						<span>{time.label}</span>
+					</span>
+				</p>
+			</div>
+		</header>
+
+		<div class="prose">
+			<slot />
+		</div>
+
+		<footer class="post-end page-grid">
+			<div class="end">
+				<div class="fin" aria-hidden="true"></div>
+				{
+					(prev || next) && (
+						<nav class="pager" aria-label="More posts">
+							{prev && (
+								<a class="pager-link older" href={postUrl(prev)} rel="prev">
+									<span class="pager-label">
+										<span aria-hidden="true">←</span> Older post
+									</span>
+									<span class="pager-title">{prev.data.title}</span>
+								</a>
+							)}
+							{next && (
+								<a class="pager-link newer" href={postUrl(next)} rel="next">
+									<span class="pager-label">
+										Newer post <span aria-hidden="true">→</span>
+									</span>
+									<span class="pager-title">{next.data.title}</span>
+								</a>
+							)}
+						</nav>
+					)
+				}
+				<p class="back">
+					<a href="/posts/"><span aria-hidden="true">←</span> All posts</a>
+				</p>
+			</div>
+		</footer>
+	</article>
+</BaseLayout>
+
+<style>
+	.post-header {
+		padding-block: var(--space-2xl) var(--space-xl);
+	}
+
+	.heading {
+		display: grid;
+		gap: var(--space-s);
+	}
+
+	.draft {
+		justify-self: start;
+		padding: 0.25em 0.7em;
+		border-radius: var(--radius-s);
+		background: var(--accent-soft);
+		color: var(--accent-strong);
+		font-family: var(--font-sans);
+		font-size: var(--step--1);
+		font-weight: 600;
+	}
+
+	.dek {
+		font-size: var(--step-1);
+		line-height: 1.45;
+		color: var(--text-muted);
+	}
+
+	.byline {
+		margin-block-start: var(--space-2xs);
+		padding-block-start: var(--space-s);
+		border-block-start: 1px solid var(--rule);
+		overflow: hidden;
+	}
+
+	/* Every item starts with a separator; the row is pulled left by one
+	   separator's width so the one at the start of each line is clipped. That
+	   way a wrapped line never starts or ends with a stray dot. */
+	.byline-items {
+		--sep: 1.2em;
+		display: flex;
+		flex-wrap: wrap;
+		margin-inline-start: calc(-1 * var(--sep));
+
+		& > :global(*)::before {
+			content: '·';
+			display: inline-block;
+			inline-size: var(--sep);
+			text-align: center;
+		}
+	}
+
+	.post-end {
+		margin-block-start: var(--space-2xl);
+	}
+
+	.end {
+		display: grid;
+		gap: var(--space-l);
+	}
+
+	.fin {
+		justify-self: center;
+		inline-size: 0.6rem;
+		block-size: 0.6rem;
+		border-radius: 2px;
+		background: var(--accent);
+		rotate: 45deg;
+	}
+
+	.pager {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+		gap: var(--space-s);
+	}
+
+	.pager-link {
+		display: grid;
+		align-content: start;
+		gap: var(--space-3xs);
+		padding: var(--space-s) var(--space-m);
+		border: 1px solid var(--rule);
+		border-radius: var(--radius-l);
+		text-decoration: none;
+		transition:
+			border-color 0.15s,
+			background-color 0.15s;
+
+		&:hover {
+			border-color: var(--rule-strong);
+			background: var(--surface);
+
+			& .pager-title {
+				color: var(--accent);
+			}
+		}
+	}
+
+	.newer {
+		text-align: end;
+	}
+
+	.pager-label {
+		font-family: var(--font-sans);
+		font-size: var(--step--2);
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+	}
+
+	.pager-title {
+		font-size: var(--step-1);
+		font-weight: 600;
+		line-height: 1.25;
+		transition: color 0.15s;
+	}
+
+	.back {
+		font-family: var(--font-sans);
+		font-size: var(--step--1);
+		font-weight: 500;
+
+		& a {
+			display: inline-block;
+			padding-block: 0.4rem;
+			text-decoration: none;
+			color: var(--text-muted);
+
+			&:hover {
+				color: var(--accent);
+			}
+		}
+	}
+</style>

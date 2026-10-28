@@ -1,0 +1,51 @@
+---
+import BaseHead, { type Props as HeadProps } from '../components/BaseHead.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import { SITE } from '../consts';
+import '../styles/global.css';
+
+export type Props = HeadProps;
+---
+
+<!doctype html>
+<html lang={SITE.lang}>
+	<head>
+		<BaseHead {...Astro.props} />
+		<slot name="head" />
+	</head>
+	<body>
+		<a class="skip-link" href="#main">Skip to content</a>
+		<SiteHeader />
+		<main id="main" tabindex="-1">
+			<slot />
+		</main>
+		<SiteFooter />
+	</body>
+</html>
+
+<style>
+	.skip-link {
+		position: absolute;
+		inset-block-start: var(--space-2xs);
+		inset-inline-start: var(--space-2xs);
+		z-index: 10;
+		padding: 0.6rem 1rem;
+		border-radius: var(--radius);
+		background: var(--text);
+		color: var(--bg);
+		font-family: var(--font-sans);
+		font-size: var(--step--1);
+		font-weight: 600;
+		text-decoration: none;
+		transform: translateY(-200%);
+
+		&:focus {
+			transform: none;
+		}
+	}
+
+	main:focus {
+		outline: none;
+	}
+</style>

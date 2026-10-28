@@ -1,0 +1,84 @@
+---
+// The click handler lives in ThemeScript.astro (event delegation), so this
+// component ships no JavaScript of its own. aria-pressed is kept in step by
+// that script; "pressed" means the dark theme is on.
+---
+
+<button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false">
+	<span class="visually-hidden">Dark theme</span>
+	<svg class="icon sun" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+		<circle cx="12" cy="12" r="4.25"></circle>
+		<path
+			d="M12 2.5v2.25M12 19.25v2.25M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.25M19.25 12h2.25M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"
+		></path>
+	</svg>
+	<svg class="icon moon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+		<path d="M20.1 14.6A8.25 8.25 0 0 1 9.4 3.9a8.25 8.25 0 1 0 10.7 10.7Z"></path>
+	</svg>
+</button>
+
+<style>
+	.theme-toggle {
+		display: inline-grid;
+		place-items: center;
+		inline-size: 2.5rem;
+		block-size: 2.5rem;
+		padding: 0;
+		border: 1px solid transparent;
+		border-radius: 999px;
+		background: none;
+		color: var(--text-muted);
+		cursor: pointer;
+		transition:
+			color 0.15s,
+			background-color 0.15s,
+			border-color 0.15s;
+
+		&:hover {
+			color: var(--text);
+			background: var(--surface);
+			border-color: var(--rule);
+		}
+	}
+
+	/* Without JavaScript the button cannot do anything, so hide it. */
+	:global(:root:not([data-theme])) .theme-toggle {
+		display: none;
+	}
+
+	.icon {
+		grid-area: 1 / 1;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.75;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		transition:
+			opacity 0.2s,
+			transform 0.35s var(--ease-out);
+	}
+
+	.moon {
+		opacity: 0;
+		transform: rotate(-60deg) scale(0.6);
+	}
+
+	/* Keyed off data-theme (set before first paint) rather than aria-pressed
+	   (set once the button exists), so the right icon shows immediately. */
+	:global(:root[data-theme='dark']) .theme-toggle {
+		& .sun {
+			opacity: 0;
+			transform: rotate(60deg) scale(0.6);
+		}
+		& .moon {
+			opacity: 1;
+			transform: none;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.icon {
+			transition: none;
+		}
+	}
+</style>

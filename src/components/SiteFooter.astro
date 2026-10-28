@@ -1,0 +1,61 @@
+---
+import { SITE } from '../consts';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer page-grid">
+	<div class="inner wide">
+		<p>
+			&copy; {year} {SITE.author || SITE.title}
+		</p>
+		<ul>
+			<li><a href="/posts/">All writing</a></li>
+			<li><a href="/about/">About</a></li>
+			<li><a href="/rss.xml">RSS feed</a></li>
+		</ul>
+	</div>
+</footer>
+
+<style>
+	.site-footer {
+		margin-block-start: var(--space-3xl);
+		padding-block: var(--space-l) var(--space-xl);
+	}
+
+	.inner {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--space-xs) var(--space-l);
+		padding-block-start: var(--space-m);
+		border-block-start: 1px solid var(--rule);
+		font-family: var(--font-sans);
+		font-size: var(--step--1);
+		color: var(--text-muted);
+	}
+
+	p {
+		margin: 0;
+	}
+
+	ul {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2xs) var(--space-m);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	a {
+		text-decoration: none;
+
+		&:hover {
+			color: var(--text);
+			text-decoration: underline;
+			text-decoration-color: var(--accent);
+		}
+	}
+</style>

@@ -1,0 +1,50 @@
+---
+// Render-blocking inline script for <head>. Sets <html data-theme> before
+// first paint so there is no flash of the wrong theme, then:
+//   - follows the system setting live while the reader has not chosen,
+//   - handles clicks on any [data-theme-toggle] button (event delegation, so
+//     no other script is needed), and keeps its aria-pressed in step,
+//   - updates <meta name="theme-color"> to match an explicit choice,
+//   - syncs across tabs, and when a page comes back from the back/forward
+//     cache or a prerendered page (see the speculation rules) is shown.
+// Choosing the theme that matches the system clears the stored choice, so the
+// site goes back to following the system.
+import { THEME_COLOURS } from '../consts';
+---
+
+<script is:inline define:vars={{ colours: THEME_COLOURS }}>
+	const root = document.documentElement;
+	const system = matchMedia('(prefers-color-scheme: dark)');
+	let memory = null; // used when storage is blocked
+	const stored = () => {
+		try {
+			const t = localStorage.getItem('theme');
+			return t === 'light' || t === 'dark' ? t : null;
+		} catch {
+			return memory;
+		}
+	};
+	const preferred = () => (system.matches ? 'dark' : 'light');
+	const apply = () => {
+		const theme = stored() || preferred();
+		root.dataset.theme = theme;
+		for (const m of document.querySelectorAll('meta[name="theme-color"]')) m.content = colours[theme];
+		for (const b of document.querySelectorAll('[data-theme-toggle]')) b.setAttribute('aria-pressed', theme === 'dark');
+	};
+	apply();
+	system.addEventListener('change', apply);
+	addEventListener('storage', (e) => e.key === 'theme' && apply());
+	addEventListener('pageshow', apply);
+	document.addEventListener('prerenderingchange', apply);
+	document.addEventListener('DOMContentLoaded', apply);
+	document.addEventListener('click', (e) => {
+		if (!e.target.closest?.('[data-theme-toggle]')) return;
+		const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+		memory = next === preferred() ? null : next;
+		try {
+			if (memory) localStorage.setItem('theme', memory);
+			else localStorage.removeItem('theme');
+		} catch {}
+		apply();
+	});
+</script>

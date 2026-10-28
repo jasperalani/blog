@@ -1,0 +1,83 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Page not found" description="Sorry, there is nothing at this address." noindex>
+	<div class="page-grid not-found">
+		<div class="inner">
+			<p class="code" aria-hidden="true">404</p>
+			<h1>This page has wandered off</h1>
+			<p class="lede">
+				Sorry, there is nothing at this address. It may have moved, or the link might have a small typo in it.
+			</p>
+			<ul role="list">
+				<li><a href="/">Go to the home page</a></li>
+				<li><a href="/posts/">Browse all writing</a></li>
+			</ul>
+		</div>
+	</div>
+</BaseLayout>
+
+<style>
+	.not-found {
+		padding-block: var(--space-3xl) var(--space-xl);
+	}
+
+	.inner {
+		display: grid;
+		gap: var(--space-s);
+	}
+
+	.code {
+		font-family: var(--font-sans);
+		font-size: var(--step--1);
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		color: var(--accent);
+	}
+
+	.lede {
+		font-size: var(--step-1);
+		color: var(--text-muted);
+	}
+
+	ul {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-xs);
+		margin: var(--space-s) 0 0;
+		padding: 0;
+		list-style: none;
+		font-family: var(--font-sans);
+		font-size: var(--step--1);
+		font-weight: 500;
+	}
+
+	a {
+		display: inline-block;
+		padding: 0.6rem 1.1rem;
+		border: 1px solid var(--rule);
+		border-radius: 999px;
+		text-decoration: none;
+		transition:
+			border-color 0.15s,
+			background-color 0.15s;
+
+		&:hover {
+			border-color: var(--rule-strong);
+			background: var(--surface);
+		}
+	}
+
+	li:first-child a {
+		border-color: var(--text);
+		background: var(--text);
+		color: var(--bg);
+
+		&:hover {
+			border-color: var(--accent-strong);
+			background: var(--accent-strong);
+			color: var(--bg);
+		}
+	}
+</style>

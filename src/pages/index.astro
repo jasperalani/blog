@@ -1,0 +1,117 @@
+---
+import PostCard from '../components/PostCard.astro';
+import { getPosts } from '../components/posts';
+import { SITE } from '../consts';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const HOME_LIMIT = 8;
+const posts = await getPosts();
+const latest = posts.slice(0, HOME_LIMIT);
+---
+
+<BaseLayout>
+	<div class="home page-grid">
+		<header class="intro">
+			<h1>{SITE.title}</h1>
+			{SITE.tagline && <p class="tagline">{SITE.tagline}</p>}
+			<p class="lede">
+				{SITE.description}{' '}
+				<a href="/about/">More about this blog</a>.
+			</p>
+		</header>
+
+		<section class="latest" aria-labelledby="latest-heading">
+			<h2 id="latest-heading" class="section-label">Latest writing</h2>
+			{
+				latest.length > 0 ? (
+					<ol class="post-list" role="list">
+						{latest.map((post) => (
+							<li>
+								<PostCard post={post} />
+							</li>
+						))}
+					</ol>
+				) : (
+					<p class="empty">Nothing published yet. The first post is on its way.</p>
+				)
+			}
+			{
+				posts.length > latest.length && (
+					<p class="more">
+						<a href="/posts/">All {posts.length} posts</a>
+					</p>
+				)
+			}
+		</section>
+	</div>
+</BaseLayout>
+
+<style>
+	.intro {
+		padding-block: var(--space-2xl) var(--space-xl);
+	}
+
+	.tagline {
+		margin-block-start: var(--space-xs);
+		font-size: var(--step-2);
+		font-style: italic;
+		line-height: 1.3;
+		color: var(--text-muted);
+		text-wrap: balance;
+	}
+
+	.lede {
+		margin-block-start: var(--space-m);
+		max-inline-size: 36rem;
+
+		& a {
+			text-decoration-color: var(--accent);
+
+			&:hover {
+				color: var(--accent);
+			}
+		}
+	}
+
+	.section-label {
+		display: flex;
+		align-items: center;
+		gap: var(--space-s);
+		font-family: var(--font-sans);
+		font-size: var(--step--2);
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+
+		&::after {
+			content: '';
+			flex: 1;
+			block-size: 1px;
+			background: var(--rule);
+		}
+	}
+
+	.post-list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+
+		& > li + li {
+			border-block-start: 1px solid var(--rule);
+		}
+	}
+
+	.empty,
+	.more {
+		padding-block: var(--space-l);
+		font-family: var(--font-sans);
+		font-size: var(--step--1);
+		color: var(--text-muted);
+	}
+
+	.more a {
+		color: var(--text);
+		text-decoration-color: var(--accent);
+	}
+</style>

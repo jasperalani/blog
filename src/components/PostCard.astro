@@ -1,0 +1,97 @@
+---
+import FormattedDate from './FormattedDate.astro';
+import { postUrl, readingTime, type Post } from './posts';
+
+interface Props {
+	post: Post;
+	/** Heading level for the title, to keep the page outline in order. */
+	level?: 'h2' | 'h3';
+}
+const { post, level: Heading = 'h3' } = Astro.props;
+const { title, description, pubDate, tags, draft } = post.data;
+const time = readingTime(post.body);
+---
+
+<article class="post-card">
+	<p class="meta">
+		<FormattedDate date={pubDate} />
+		<span aria-hidden="true">·</span>
+		<span>{time.label}</span>
+		{draft && <span class="draft">Draft</span>}
+	</p>
+	<Heading class="title">
+		<a href={postUrl(post)}>{title}</a>
+	</Heading>
+	<p class="summary">{description}</p>
+	{
+		tags.length > 0 && (
+			<ul class="tags" aria-label="Tags">
+				{tags.map((tag) => (
+					<li>{tag}</li>
+				))}
+			</ul>
+		)
+	}
+</article>
+
+<style>
+	.post-card {
+		position: relative;
+		display: grid;
+		gap: var(--space-2xs);
+		padding-block: var(--space-l);
+	}
+
+	.meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5em;
+	}
+
+	.draft {
+		padding-inline: 0.5em;
+		border-radius: var(--radius-s);
+		background: var(--accent-soft);
+		color: var(--accent-strong);
+		font-weight: 600;
+	}
+
+	.title {
+		font-size: var(--step-2);
+		line-height: 1.2;
+
+		& a {
+			text-decoration: none;
+
+			/* The whole card is clickable; the link stays the only focus stop. */
+			&::after {
+				content: '';
+				position: absolute;
+				inset: var(--space-xs) calc(-1 * var(--space-xs));
+				border-radius: var(--radius-l);
+			}
+
+			&:focus-visible {
+				outline: none;
+
+				&::after {
+					outline: 2px solid var(--accent);
+					outline-offset: 2px;
+				}
+			}
+		}
+	}
+
+	.post-card:hover .title a {
+		color: var(--accent);
+	}
+
+	.summary {
+		color: var(--text-muted);
+		max-inline-size: 38rem;
+	}
+
+	.tags {
+		margin-block-start: var(--space-3xs);
+	}
+</style>

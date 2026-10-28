@@ -1,0 +1,447 @@
+---
+// A small top-down animation of a single-lane road. Each car follows one rule:
+// drive at the speed you want, unless the car in front is slower, then sit
+// behind it. A side road lets some slow leaders turn off, which releases the
+// fast cars behind them.
+interface Props {
+	caption?: string;
+}
+const { caption } = Astro.props;
+
+// Trees on the verges: [x, y, radius]. Kept clear of the road and side road.
+const trees = [
+	[40, 30, 15], [120, 58, 11], [205, 22, 17], [300, 50, 12], [395, 18, 14], [470, 60, 10],
+	[680, 34, 16], [770, 62, 11], [850, 20, 14], [930, 52, 12],
+	[70, 200, 13], [165, 222, 16], [260, 188, 10], [350, 214, 15], [455, 192, 12], [545, 224, 14],
+	[640, 196, 11], [735, 220, 16], [825, 190, 12], [915, 214, 15],
+];
+---
+
+<figure class="traffic wide">
+	<traffic-animation class="stage">
+		<svg
+			viewBox="0 20 960 200"
+			preserveAspectRatio="xMidYMid slice"
+			role="img"
+			aria-label="Top-down view of a single-lane road. Cars that want to go faster catch up with slower cars and have to sit behind them, so the traffic travels in groups. At a side road some slow leaders turn off, and the fast cars behind them speed up and spread out, unless the next car is slow too."
+		>
+			<rect class="verge" y="20" width="960" height="200"></rect>
+			{trees.map(([x, y, r]) => <circle class="tree" cx={x} cy={y} r={r} />)}
+			<path class="road" d="M-10 96H550a20 20 0 0 0 20-20V-10h40V76a20 20 0 0 0 20 20H970v56H-10Z"></path>
+			<path class="line edge" d="M-10 99H552a21 21 0 0 0 21-21V-10M607-10V78a21 21 0 0 0 21 21H970M-10 149H970"></path>
+			<path class="line centre" d="M-10 124H970"></path>
+			<path class="line give-way" d="M573 84H607"></path>
+			<g class="oncoming"></g>
+			<g class="cars"></g>
+		</svg>
+		<button type="button" class="toggle" aria-pressed="false" hidden>
+			<svg class="icon" viewBox="0 0 16 16" aria-hidden="true">
+				<path class="pause-icon" d="M4 3h3v10H4zM9 3h3v10H9z"></path>
+				<path class="play-icon" d="M5 3l8 5-8 5z"></path>
+			</svg>
+			<span class="label">Pause</span>
+		</button>
+	</traffic-animation>
+	<p class="legend" aria-hidden="true">
+		<span><svg viewBox="0 0 34 16"><rect class="car slow" x="1" y="1" width="32" height="14" rx="2"></rect></svg>Wants to go slowly</span>
+		<span><svg viewBox="0 0 34 16"><rect class="car fast" x="3" y="2" width="28" height="12" rx="4.5"></rect></svg>Wants to go faster</span>
+	</p>
+	{caption && <figcaption>{caption}</figcaption>}
+	<noscript><p class="noscript">This animation needs JavaScript. It shows fast cars catching up with slow ones on a single-lane road and forming groups behind them.</p></noscript>
+</figure>
+
+<style>
+	.traffic {
+		--verge: light-dark(#e3e6d3, #1b2019);
+		--tree: light-dark(#c7d0b0, #263024);
+		--road: light-dark(#d2ccbf, #383631);
+		--road-line: light-dark(#fbf9f4, #8f8a80);
+		--fast: light-dark(#1f5fa8, #72b2f5);
+		--slow: light-dark(#b4561a, #f0a24f);
+		--oncoming: light-dark(#a39d90, #5b5850);
+		--outline: light-dark(rgb(0 0 0 / 0.28), rgb(0 0 0 / 0.5));
+		--glass: light-dark(rgb(20 30 40 / 0.55), rgb(10 14 20 / 0.7));
+		--brake: #ff3b30;
+		--headlight: light-dark(transparent, #fff4c8);
+
+		display: grid;
+		gap: var(--space-xs);
+	}
+
+	.stage {
+		position: relative;
+		display: block;
+		overflow: hidden;
+		border-radius: var(--radius-l);
+		background: var(--verge);
+		aspect-ratio: 960 / 200;
+
+		@media (width < 40rem) {
+			/* Crop the far ends on phones so the cars stay a readable size. */
+			aspect-ratio: 640 / 200;
+		}
+
+		& > svg {
+			display: block;
+			inline-size: 100%;
+			block-size: 100%;
+		}
+	}
+
+	.verge {
+		fill: var(--verge);
+	}
+	.tree {
+		fill: var(--tree);
+	}
+	.road {
+		fill: var(--road);
+	}
+	.line {
+		fill: none;
+		stroke: var(--road-line);
+		stroke-width: 1.5;
+	}
+	.centre {
+		stroke-dasharray: 14 12;
+	}
+	.give-way {
+		stroke-dasharray: 5 4;
+		stroke-width: 2;
+	}
+
+	.traffic :global(.car) {
+		stroke: var(--outline);
+		stroke-width: 0.75;
+	}
+	.traffic :global(.car.fast) {
+		fill: var(--fast);
+	}
+	.traffic :global(.car.slow) {
+		fill: var(--slow);
+	}
+	.traffic :global(.car.oncoming) {
+		fill: var(--oncoming);
+	}
+	.traffic :global(.glass) {
+		fill: var(--glass);
+	}
+	.traffic :global(.headlight) {
+		fill: var(--headlight);
+	}
+	.traffic :global(.brake) {
+		fill: var(--brake);
+		opacity: 0;
+		transition: opacity 0.15s;
+	}
+	.traffic :global(.braking .brake) {
+		opacity: 1;
+	}
+
+	.toggle {
+		position: absolute;
+		inset-block-start: var(--space-2xs);
+		inset-inline-end: var(--space-2xs);
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4em;
+		min-block-size: 2.25rem;
+		padding: 0 0.85em;
+		border: 1px solid var(--rule);
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--bg) 88%, transparent);
+		color: var(--text);
+		font: 600 var(--step--2) / 1 var(--font-sans);
+		cursor: pointer;
+		backdrop-filter: blur(4px);
+
+		&[hidden] {
+			display: none;
+		}
+		&:hover {
+			border-color: var(--rule-strong);
+		}
+		&:focus-visible {
+			outline: 2px solid var(--accent);
+			outline-offset: 2px;
+		}
+
+		& .icon {
+			inline-size: 0.85em;
+			block-size: 0.85em;
+			fill: currentColor;
+		}
+		&[aria-pressed='false'] .play-icon,
+		&[aria-pressed='true'] .pause-icon {
+			display: none;
+		}
+	}
+
+	.legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2xs) var(--space-m);
+		font: var(--step--2) / 1.4 var(--font-sans);
+		color: var(--text-muted);
+
+		& span {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.5em;
+		}
+		& svg {
+			inline-size: 1.75em;
+			block-size: auto;
+		}
+	}
+
+	.noscript {
+		font: var(--step--1) / 1.5 var(--font-sans);
+		color: var(--text-muted);
+	}
+</style>
+
+<script>
+	const SVG_NS = 'http://www.w3.org/2000/svg';
+
+	// Road geometry, in SVG units. Our lane runs left to right (we drive on the
+	// left); the side road leaves it at TURN_X and heads up off the top.
+	const LANE_Y = 110;
+	const ONCOMING_Y = 138;
+	const START = -60;
+	const END = 1020;
+	const TURN_X = 570; // where a turning car's centre starts to curve
+	const RADIUS = 20;
+	const ARC = (Math.PI / 2) * RADIUS;
+	const SIDE_X = TURN_X + RADIUS;
+
+	// Driving behaviour, in units per second.
+	const GAP = 18; // gap a driver keeps when sitting behind someone
+	const CLOSE_RATE = 1.6; // how keenly a driver closes up to that gap
+	const ACCEL = 45;
+	const BRAKE = 170;
+	const TURN_SPEED = 24;
+
+	type Kind = 'slow' | 'fast';
+	interface Car {
+		kind: Kind;
+		want: number;
+		len: number;
+		x: number; // front bumper along the lane
+		v: number;
+		turnOff: boolean;
+		turning: boolean;
+		d: number; // distance travelled along the turn
+		brakeFor: number;
+		el: SVGGElement;
+	}
+
+	// The traffic arriving at the start of the road, repeated forever. Speeds
+	// and gaps are chosen so the story is easy to follow: slow drivers collect
+	// a queue, one slow leader turns off at the side road, the fast cars right
+	// behind it get away, and the next slow driver carries on with the rest.
+	const ARRIVALS: { kind: Kind; want: number; after: number; turnOff?: boolean }[] = [
+		{ kind: 'slow', want: 52, after: 0, turnOff: true },
+		{ kind: 'fast', want: 112, after: 1.5 },
+		{ kind: 'fast', want: 104, after: 1.2 },
+		{ kind: 'slow', want: 63, after: 1.3 },
+		{ kind: 'fast', want: 110, after: 1.3 },
+		{ kind: 'fast', want: 100, after: 1.2 },
+		{ kind: 'fast', want: 115, after: 2.6 },
+		{ kind: 'slow', want: 58, after: 2.2 },
+		{ kind: 'fast', want: 108, after: 1.4 },
+		{ kind: 'slow', want: 55, after: 1.6 },
+		{ kind: 'fast', want: 113, after: 1.3 },
+		{ kind: 'fast', want: 105, after: 2.4 },
+	];
+	const CYCLE_PAUSE = 2.2;
+
+	function svg<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number>) {
+		const el = document.createElementNS(SVG_NS, tag);
+		for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+		return el;
+	}
+
+	/** A top-down vehicle pointing right, centred on 0,0. */
+	function vehicle(kind: Kind | 'oncoming', len: number) {
+		const w = kind === 'slow' ? 14 : 12;
+		const g = svg('g', {});
+		g.append(
+			svg('rect', { class: `car ${kind}`, x: -len / 2, y: -w / 2, width: len, height: w, rx: kind === 'slow' ? 2 : 4.5 }),
+			svg('rect', { class: 'glass', x: len / 2 - 10, y: -w / 2 + 2, width: 4, height: w - 4, rx: 1 }),
+			svg('rect', { class: 'glass', x: -len / 2 + 3, y: -w / 2 + 2.5, width: 2.5, height: w - 5, rx: 1 }),
+			svg('rect', { class: 'headlight', x: len / 2 - 1.5, y: -w / 2 + 1, width: 1.5, height: 2.5 }),
+			svg('rect', { class: 'headlight', x: len / 2 - 1.5, y: w / 2 - 3.5, width: 1.5, height: 2.5 }),
+			svg('rect', { class: 'brake', x: -len / 2 - 0.5, y: -w / 2 + 1, width: 2, height: 2.5 }),
+			svg('rect', { class: 'brake', x: -len / 2 - 0.5, y: w / 2 - 3.5, width: 2, height: 2.5 }),
+		);
+		return g;
+	}
+
+	class TrafficAnimation extends HTMLElement {
+		private cars: Car[] = [];
+		private oncoming: { x: number; v: number; el: SVGGElement }[] = [];
+		private carLayer!: SVGGElement;
+		private oncomingLayer!: SVGGElement;
+		private button!: HTMLButtonElement;
+		private next = 0; // index into ARRIVALS
+		private wait = 0; // seconds until the next arrival
+		private oncomingWait = 1;
+		private visible = false;
+		private paused = false;
+		private frame = 0;
+		private last = 0;
+		private observer?: IntersectionObserver;
+
+		connectedCallback() {
+			this.carLayer = this.querySelector('g.cars')!;
+			this.oncomingLayer = this.querySelector('g.oncoming')!;
+			this.button = this.querySelector('button.toggle')!;
+			this.button.hidden = false;
+			this.button.addEventListener('click', this.toggle);
+			document.addEventListener('visibilitychange', this.sync);
+
+			// Start with the road already busy, as if we'd arrived mid-afternoon.
+			for (let t = 0; t < 26; t += 1 / 30) this.update(1 / 30);
+			this.render();
+
+			this.paused = matchMedia('(prefers-reduced-motion: reduce)').matches;
+			this.observer = new IntersectionObserver(([entry]) => {
+				this.visible = entry.isIntersecting;
+				this.sync();
+			});
+			this.observer.observe(this);
+			this.sync();
+		}
+
+		disconnectedCallback() {
+			this.observer?.disconnect();
+			document.removeEventListener('visibilitychange', this.sync);
+			cancelAnimationFrame(this.frame);
+		}
+
+		private toggle = () => {
+			this.paused = !this.paused;
+			this.sync();
+		};
+
+		/** Run only when on screen, in a visible tab, and not paused. */
+		private sync = () => {
+			this.button.setAttribute('aria-pressed', String(this.paused));
+			this.button.querySelector('.label')!.textContent = this.paused ? 'Play' : 'Pause';
+			cancelAnimationFrame(this.frame);
+			if (this.visible && !this.paused && !document.hidden) {
+				this.last = performance.now();
+				this.frame = requestAnimationFrame(this.tick);
+			}
+		};
+
+		private tick = (now: number) => {
+			const dt = Math.min((now - this.last) / 1000, 0.1);
+			this.last = now;
+			const steps = Math.ceil(dt / (1 / 60));
+			for (let i = 0; i < steps; i++) this.update(dt / steps);
+			this.render();
+			this.frame = requestAnimationFrame(this.tick);
+		};
+
+		private update(dt: number) {
+			this.arrive(dt);
+
+			// Front to back. The array is in arrival order and nobody overtakes,
+			// so the car ahead of cars[i] is always the nearest earlier car still
+			// on the road (or one that is still turning out of the way).
+			let ahead: { rear: number; v: number } | undefined;
+			for (const car of this.cars) {
+				if (car.turning) {
+					car.v = Math.min(car.v + ACCEL * dt, 70);
+					car.d += car.v * dt;
+					// Until it is round the corner it still blocks the lane.
+					if (car.d < ARC + car.len * 0.5) ahead = { rear: TURN_X - car.len / 2 + car.d * 0.9, v: car.v };
+					continue;
+				}
+
+				let target = car.want;
+				if (car.turnOff) {
+					const toCorner = TURN_X + car.len / 2 - car.x;
+					if (toCorner < 140) target = Math.min(target, TURN_SPEED + toCorner * 0.4);
+				}
+				if (ahead) {
+					// The whole rule: never faster than the car in front, once you're close.
+					const gap = ahead.rear - car.x;
+					target = Math.min(target, Math.max(0, ahead.v + (gap - GAP) * CLOSE_RATE));
+				}
+				const dv = Math.max(-BRAKE * dt, Math.min(ACCEL * dt, target - car.v));
+				car.v = Math.max(0, car.v + dv);
+				car.brakeFor = dv < -12 * dt ? 0.3 : Math.max(0, car.brakeFor - dt);
+				car.x += car.v * dt;
+				if (ahead && car.x > ahead.rear - 4) {
+					car.x = ahead.rear - 4;
+					car.v = Math.min(car.v, ahead.v);
+				}
+				if (car.turnOff && car.x >= TURN_X + car.len / 2) {
+					car.turning = true;
+					car.brakeFor = 0;
+				}
+				ahead = { rear: car.x - car.len, v: car.v };
+			}
+
+			this.cars = this.cars.filter((car) => {
+				const gone = car.turning ? car.d > ARC + 140 : car.x - car.len > END;
+				if (gone) car.el.remove();
+				return !gone;
+			});
+
+			// Oncoming traffic: just a reminder that you can't pull out and pass.
+			this.oncomingWait -= dt;
+			if (this.oncomingWait <= 0) {
+				const el = vehicle('oncoming', 27);
+				this.oncomingLayer.append(el);
+				this.oncoming.push({ x: END, v: 95 + Math.random() * 20, el });
+				this.oncomingWait = 2.5 + Math.random() * 4;
+			}
+			for (const car of this.oncoming) car.x -= car.v * dt;
+			this.oncoming = this.oncoming.filter((car) => {
+				if (car.x < START) car.el.remove();
+				return car.x >= START;
+			});
+		}
+
+		private arrive(dt: number) {
+			this.wait -= dt;
+			if (this.wait > 0) return;
+			const spec = ARRIVALS[this.next];
+			const len = spec.kind === 'slow' ? 32 : 27;
+			const last = this.cars.at(-1);
+			// Hold the car back until there is room at the start of the road.
+			if (last && !last.turning && last.x - last.len - START < len + GAP) return;
+			const el = vehicle(spec.kind, len);
+			this.carLayer.append(el);
+			const v = last && !last.turning ? Math.min(spec.want, last.v + 30) : spec.want;
+			this.cars.push({ ...spec, turnOff: !!spec.turnOff, len, x: START + len, v, turning: false, d: 0, brakeFor: 0, el });
+			this.next = (this.next + 1) % ARRIVALS.length;
+			this.wait = ARRIVALS[this.next].after + (this.next === 0 ? CYCLE_PAUSE : 0);
+		}
+
+		private render() {
+			for (const car of this.cars) {
+				let x: number, y: number, angle: number;
+				if (!car.turning) {
+					[x, y, angle] = [car.x - car.len / 2, LANE_Y, 0];
+				} else if (car.d < ARC) {
+					const t = car.d / RADIUS;
+					[x, y, angle] = [TURN_X + RADIUS * Math.sin(t), LANE_Y - RADIUS + RADIUS * Math.cos(t), (-t * 180) / Math.PI];
+				} else {
+					[x, y, angle] = [SIDE_X, LANE_Y - RADIUS - (car.d - ARC), -90];
+				}
+				car.el.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${angle.toFixed(1)})`);
+				car.el.classList.toggle('braking', car.brakeFor > 0);
+			}
+			for (const car of this.oncoming) {
+				car.el.setAttribute('transform', `translate(${car.x.toFixed(1)} ${ONCOMING_Y}) rotate(180)`);
+			}
+		}
+	}
+
+	customElements.define('traffic-animation', TrafficAnimation);
+</script>
